@@ -305,11 +305,10 @@ EOF
 
     # start OpenLDAP
     log-helper info "Start OpenLDAP..."
-    # At this stage, we can just listen to ldap:// and ldap:// without naming any names
     if log-helper level ge debug; then
-      slapd -h "ldap:/// ldapi:///" -u openldap -g openldap -d "$LDAP_LOG_LEVEL" 2>&1 &
+      slapd -h "ldap://$HOSTNAME $PREVIOUS_HOSTNAME_PARAM ldap://localhost ldapi:///" -u openldap -g openldap -d "$LDAP_LOG_LEVEL" 2>&1 &
     else
-      slapd -h "ldap:/// ldapi:///" -u openldap -g openldap
+      slapd -h "ldap://$HOSTNAME $PREVIOUS_HOSTNAME_PARAM ldap://localhost ldapi:///" -u openldap -g openldap
     fi
 
 
@@ -567,8 +566,10 @@ ln -sf ${CONTAINER_SERVICE_DIR}/slapd/assets/ldap.conf /etc/ldap/ldap.conf
 # force OpenLDAP to listen on all interfaces
 # We need to make sure that /etc/hosts continues to include the
 # fully-qualified domain name and not just the specified hostname.
-# Without the FQDN, /bin/hostname --fqdn stops working.
-FQDN="$(/bin/hostname --fqdn)"
+if [ -z "$FQDN" ]; then
+  # Only call hostname if the fully qualified domain name wasn't provided as environment variable.
+  FQDN="$(/bin/hostname --fqdn)"
+fi
 if [ "$FQDN" != "$HOSTNAME" ]; then
     FQDN_PARAM="$FQDN"
 else
